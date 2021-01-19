@@ -1,0 +1,3 @@
+include ':app:androidpractice2'
+include ':app'
+rootProject.name = "AndroidPractice"
