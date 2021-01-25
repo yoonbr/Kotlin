@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>안드로이드와의 메시지 주고 받기</title>
+</head>
+<body>
+	<h3>토스트 메시지 입력</h3>
+	메시지:<input type="text" id="toastmessageinput" />
+	<br/>
+	
+	<input type="button" id="showtoast"
+	 value="메시지 전송" />
+	 
+	<h3>네이티브 앱에서 전달받은 메시지</h3>
+	전달받은 메시지:<div id="nativemessage"></div>
+	
+</body>
+
+<script>
+	document.getElementById("showtoast").addEventListener("click", function(e){
+			//안드로이드 앱의 showToastMessage 
+			//메소드를 호출
+		MyApp.showToastMessage(document.getElementById("toastmessageinput").value)})
+	
+	//안드로이드 앱에서 호출할 함수
+	function showDisplayMessage(message){
+		document.getElementById("nativemessage").innerHTML = message}
+</script>
+
+</html>
