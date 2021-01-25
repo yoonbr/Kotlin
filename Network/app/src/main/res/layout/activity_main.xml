@@ -12,14 +12,14 @@
         android:layout_height="wrap_content"
         android:id="@+id/btnTextDownload"
         android:text="문자열 다운로드"
-        android:textSize="20dp" />
+        android:textSize="16dp" />
 
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/btnImgDownload"
         android:text="이미지 다운로드"
-        android:textSize="20dp" />
+        android:textSize="16dp" />
 
     <Button
         android:layout_width="match_parent"
@@ -27,7 +27,7 @@
         android:text="HTML 파싱"
         android:id="@+id/btnHtmlParsing"
         android:textStyle="bold"
-        android:textSize="20dp"/>
+        android:textSize="16dp"/>
 
     <Button
         android:layout_width="match_parent"
@@ -35,7 +35,31 @@
         android:text="DOM 파싱"
         android:id="@+id/btnDomParsing"
         android:textStyle="bold"
-        android:textSize="20dp"/>
+        android:textSize="16dp"/>
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Kakao OPEN API 활용(JSON Parsing)"
+        android:id="@+id/btnKakaoOpenAPI"
+        android:textStyle="bold"
+        android:textSize="16dp"/>
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Item 상세보기(JSONParsing-Image 다운로드)"
+        android:id="@+id/btnItemDetail"
+        android:textStyle="bold"
+        android:autoSizeTextType="uniform"/>
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Item 추가(JSONParsing-File Uplode)"
+        android:id="@+id/btnItemInsert"
+        android:textStyle="bold"
+        android:textSize="16dp"/>
 
 
 </LinearLayout>
