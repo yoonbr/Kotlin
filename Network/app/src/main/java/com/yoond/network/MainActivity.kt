@@ -59,5 +59,10 @@ class MainActivity : AppCompatActivity() {
             var intent = Intent(this, ItemInsertActivity::class.java)
             startActivity(intent)
         }
+
+        btnSignUp.setOnClickListener {
+            var intent = Intent(this, MemberJoinActivity::class.java)
+            startActivity(intent)
+        }
     }
 }

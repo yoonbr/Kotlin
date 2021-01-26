@@ -4,33 +4,29 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ItemInsertActivity"
+    tools:context=".MemberJoinActivity"
     android:orientation="vertical">
+
     <EditText
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="제품 이름을 입력하세요"
-        android:id="@+id/itemnameinput"/>
+        android:hint="email 입력하세요"
+        android:id="@+id/emailinput"/>
     <EditText
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="제품 가격을 입력하세요"
-        android:id="@+id/priceinput"
-        android:inputType="number"/>
+        android:inputType="textPassword"
+        android:hint="비밀번호를 입력하세요"
+        android:id="@+id/pwinput" />
     <EditText
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="제품 설명을 입력하세요"
-        android:id="@+id/descriptioninput"/>
-    <ImageView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:src="@drawable/starbucks1"/>
+        android:hint="별명을 입력하세요"
+        android:id="@+id/nicknameinput"/>
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="아이템 삽입"
-        android:id="@+id/btnInsert"/>
+        android:text="회원가입"
+        android:id="@+id/join"/>
 
 </LinearLayout>
