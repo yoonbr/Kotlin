@@ -64,5 +64,10 @@ class MainActivity : AppCompatActivity() {
             var intent = Intent(this, MemberJoinActivity::class.java)
             startActivity(intent)
         }
+
+        btnLogin.setOnClickListener {
+            var intent = Intent(this, MemberLoginActivity::class.java)
+            startActivity(intent)
+        }
     }
 }

@@ -64,10 +64,17 @@
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="SIGN UP"
+        android:text="SIGN UP(JSONParsing-File Upload)"
         android:id="@+id/btnSignUp"
         android:textStyle="bold"
         android:textSize="16dp"/>
 
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="LOGIN(File-uplode 없는 POST방식)"
+        android:id="@+id/btnLogin"
+        android:textStyle="bold"
+        android:textSize="16dp"/>
 
 </LinearLayout>

@@ -6,9 +6,11 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Message
 import android.renderscript.ScriptGroup
+import android.text.TextUtils
 import android.util.Log
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_member_join.*
+import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.DataOutputStream
 import java.io.InputStreamReader
@@ -150,7 +152,7 @@ class MemberJoinActivity : AppCompatActivity() {
                     }
 
                     // 파일 파라미터 생성
-                    val fileName = "starbucks1.png"
+                    val fileName = "jingjing.png"
                     if (fileName != null) {
                         postDataBuilder.append(delimiter)
                         postDataBuilder.append("Content-Disposition: form-data;name=" +
@@ -200,7 +202,29 @@ class MemberJoinActivity : AppCompatActivity() {
                     br.close()
                     con.disconnect()
 
-                    Log.e("가입 결과", sb.toString())
+                    // Log.e("가입 결과", sb.toString())
+                    // 결과는 result : 가입 성공 여부
+                    // emailcheck : 이메일 중목 검사 통과 여부
+                    if (TextUtils.isEmpty(sb.toString())){
+                        msg.obj = "네트워크 사정이 좋지 않습니다. 잠시후 다시 접속해주세요."
+                        handler.sendMessage(msg)
+                        return
+                    }else{
+                        // JSON Parsing
+                        val root = JSONObject(sb.toString())
+                        val result = root.getBoolean("result")
+                        if(result == true){
+                            msg.obj = "회원가입 완료되었습니다."
+                        } else {
+                            val emailcheck = root.getBoolean("emailcheck")
+                            if(emailcheck == true){
+                                msg.obj = "중복 이메일입니다. 다시 입력해주세요"
+                            } else {
+                                msg.obj = "중복 닉네임입니다. 다시 입력해주세요"
+                            }
+                        }
+                        handler.sendMessage(msg)
+                    }
                 }
             }.start()
         }
