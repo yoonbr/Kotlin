@@ -57,6 +57,15 @@
 	<version>0.4</version>
 </dependency>
 
+<!-- 복호화가 가능한 라이브러리 -->
+<!-- https://mvnrepository.com/artifact/commons-codec/commons-codec -->
+<dependency>
+	<groupId>commons-codec</groupId>
+	<artifactId>commons-codec</artifactId>
+	<version>1.14</version>
+</dependency>
+
+
 <!-- 파일 업로드 -->
 <dependency>
 	<groupId>commons-fileupload</groupId>

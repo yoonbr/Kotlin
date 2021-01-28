@@ -1,0 +1,125 @@
+// 존재하는 데이터 베이스 확인 
+show databases;
+
+// 현재 USER 확인 
+select user();
+
+// 현재 데이터베이스 확인 
+select database();
+
+// 테이터베이스 사용 
+use yoond;
+
+// 이전 테이블 지우기 
+drop table item;
+
+// 테이블 생성 
+create table item(
+itemid int primary key auto_increment,
+itemname varchar(50) not null,
+price int,
+description varchar(100),
+pictureurl varchar(200),
+updatedate char(20))engine=InnoDB DEFAULT CHARSET=UTF8;
+
+SELECT * from item
+
+// 샘플 데이터 생성 
+
+insert into item(itemid, itemname, price, description, pictureurl, updatedate) values(1, '사과',  1500, '비타민 C가 풍부','apple.png', '2021-01-01 12:00:00');
+insert into item(itemid, itemname, price, description, pictureurl, updatedate) values(2, '포도', 15000, '수분이 많고 지방이 적음', 'grape.jpg', '2021-01-01 12:00:00');
+insert into item(itemid, itemname, price, description, pictureurl, updatedate) values(3, '키위', 1000, '정식 명칭은 중국 다래', 'kiwi.jpg', '2021-01-01 12:00:00');
+insert into item(itemid, itemname, price, description, pictureurl, updatedate) values(4, '레몬', 500, '맛을 살리는데 탁월','lemon.jpg', '2021-01-01 12:00:00' );
+insert into item(itemid, itemname, price, description, pictureurl, updatedate) values(5, '감귤',  1500, '밀감이라고도 부름', 'mandarin.jpg', '2021-01-01 12:00:00');
+insert into item(itemid, itemname, price, description, pictureurl, updatedate) values(6, '딸기', 700, '천국에 초대받은 아이들은 지상으로 돌아올 때 머리에 딸기 꼭지가 생김', 'strawberry.jpg', '2021-01-01 12:00:00');
+insert into item(itemid, itemname, price, description, pictureurl, updatedate) values(7, '무화과', 700, '꽃이 없이 열리는 열매', 'fig.jpg', '2021-01-01 12:00:00');
+
+// DML 작업 수행 후 완료 
+commit;
+
+// item 테이블의 전체 데이터 가져오기 (itemid의 내림 차순)
+
+select * from item order by itemid desc;
+
+// 가장 큰 itemid 찾아오기 
+select max(itemid) from item;
+
+// member 테이블 생성 
+create table member(
+	email varchar(128) primary key,
+	pw varchar(128) not null,
+	nickname varchar(100) unique,
+	profile varchar(128),
+	regdate datetime default current_timestamp,
+	logindate datetime default current_timestamp
+	)engine = innoDB default charset=utf8;
+
+	// 테스트 데이터 삽입 
+	insert into member(email, pw, nickname) values('yoond@naver.com', '1234', 'yoond');
+
+// 테이블 전체 보기 
+
+select * from member;
+
+# SNS & Board
+
+create database library;
+
+use library;
+
+create table member(
+	email varchar(128)primary key,
+	pw varchar(128) not null,
+	name varchar(100) not null,
+	nikname varchar(100) unique, 
+	phone varchar(11),
+	profile varchar(100),
+	regdate date,
+	logindate datetime,
+	location char(200)
+	);
+
+create table board(
+	boardnum int primary key,
+	email varchar(128) references member(email) on delete set null,
+	nickname varchar(100),
+	boardtitle char(200) not null,
+	boardcontent text, 
+	regdate datetime,
+	readcnt int,
+	ip varchar(128),
+	likecnt int, 
+	sharecnt int,
+	boardgroup int comment '글의 그룹 번호',
+	boardparent int comment '참조 하는 글번호',
+	boardlevel int comment '들여쓰기 레벨',
+	boardseq int comment '그룹 내에서의 출력 순서'
+);
+
+# 좋아요 테이블 
+create table boardlike(
+	likenum int primary key,
+	boardnum int references board(boardnum) on delete set null,
+	nickname varchar(100) references member(nickname) on delete set null
+);
+
+# 공유 테이블
+create table boardshare(
+	sharenum int primary key,
+	boardnum int references board(boardnum) on delete set null,
+	nickname varchar(100) references member(nickname) on delete set null
+);
+
+# 첨부파일 테이블 
+create table attachment(
+	filenum int primary key,
+	boardnum int references board(boardnum) on delete set null,
+	filename varchar(200)
+);
+
+# 친구 테이블 
+create table friend(
+	friendnum int primary key,
+	email varchar(128) references member(email) on delete set null,
+	friendemail varchar(128) references member(email) on delete set null
+);

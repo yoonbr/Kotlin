@@ -1,5 +1,7 @@
 package naver.yoond.mysqlserver;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,6 +17,7 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 
 import naver.yoond.mysqlserver.dao.ItemDAO;
+import naver.yoond.mysqlserver.domain.Item;
 
 // 설정 파일의 위치를 지정해서 설정 파일의 내용을 실행해서 테스트 
 @WebAppConfiguration
@@ -48,7 +51,7 @@ public class ConnectTest {
 		// ItemDAO 연결 객체 출력 
 		// System.err.println("데이터 개수 : " + itemDao.count());
 		// System.err.println("데이터 목록 : " + itemDao.list());
-		
+		/*
 		Map<String, Object> map = 
 				new HashMap<String, Object>();
 		
@@ -60,6 +63,29 @@ public class ConnectTest {
 		
 		System.err.println("데이터 개수 : " + itemDao.count(map));
 		System.err.println("데이터 목록 : " + itemDao.list(map));
+		*/
+		
+		// System.err.println(itemDao.detail(1)); // 존재하는 번호 
+		// System.err.println(itemDao.detail(10)); // 존재하지 않는 번호 
+		
+		// 가장 큰 itemid를 가져와서 출력 
+		int maxid = itemDao.maxid();
+		System.err.println("가장 큰 ID:" + maxid);
+		
+		// 삽입할 데이터 생성 
+		Item item = new Item(); 
+		item.setItemid(maxid + 1);
+		item.setItemname("배");
+		item.setDescription("수분이 많은 과일");
+		item.setPrice(5000);
+		item.setPictureurl("pear.jpg");
+		Date date = new Date();
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+		item.setUpdatedate(sdf.format(date));
+		
+		// 데이터 삽입 
+		System.err.println(itemDao.insert(item));
+		
 	}
 
 }
