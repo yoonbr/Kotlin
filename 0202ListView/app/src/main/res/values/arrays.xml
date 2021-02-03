@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="coffee">
+        <item>Americano</item>
+        <item>Latte</item>
+        <item>IceChoco</item>
+        <item>GreenteaLatte</item>
+    </string-array>
+</resources>
