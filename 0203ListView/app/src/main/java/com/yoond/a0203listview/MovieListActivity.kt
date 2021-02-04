@@ -1,5 +1,6 @@
 package com.yoond.a0203listview
 
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import androidx.appcompat.app.AppCompatActivity
@@ -9,9 +10,8 @@ import android.os.Looper
 import android.os.Message
 import android.util.Log
 import android.view.View
-import android.widget.ArrayAdapter
-import android.widget.ListView
-import android.widget.ProgressBar
+import android.widget.*
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -43,6 +43,12 @@ class MovieListActivity : AppCompatActivity() {
     // 다운로드 진행 상황을 출력할 프로그래스 바
     var downloadview : ProgressBar? = null
 
+    // 하단에서 스크롤 한 것인지 여부를 저장하기 위한 프로퍼티
+    var lastItemVisibleFlag = false
+
+    // 현재 페이지 번호를 저장하기 위한 프로퍼티
+    var pageno = 1
+
     // ListView를 다시 출력하는 핸들러
     val handler:Handler = object : Handler(Looper.getMainLooper()){
         override fun handleMessage(msg: Message) {
@@ -51,6 +57,7 @@ class MovieListActivity : AppCompatActivity() {
             // ListView를 다시 출력하고 프로그래스 바를 중지
             movieAdapter!!.notifyDataSetChanged()
             downloadview?.visibility = View.GONE
+            th = null
         }
     }
 
@@ -60,7 +67,7 @@ class MovieListActivity : AppCompatActivity() {
         override fun run(){
             try{
                 // URL 생성
-                var url = URL("http://cyberadam.cafe24.com/movie/list")
+                var url = URL("http://cyberadam.cafe24.com/movie/list?page=${pageno}&count=10")
 
                 // 다운로드 옵션 생성
                 val con = url.openConnection() as HttpURLConnection
@@ -115,7 +122,9 @@ class MovieListActivity : AppCompatActivity() {
                         movie.thumbnail = item.getString("thumbnail")
                         movie.link = item.getString("link")
 
-                        movieList!!.add(movie)
+
+                        // 맨 앞에 데이터를 추가
+                        movieList!!.add(0, movie)
 
                         i = i + 1
                     }
@@ -165,5 +174,76 @@ class MovieListActivity : AppCompatActivity() {
         }
         th=MovieThread()
         th!!.start()
+
+        // ListView의 항목 클릭 이벤트 처리
+        listView?.onItemClickListener = AdapterView.OnItemClickListener{
+                adapterView: AdapterView<*>, view1: View, i: Int, l: Long ->
+            // 선택한 항목의 데이터를 찾아오기
+            val movie = movieList!!.get(i)
+            // 넘겨줄 데이터 가져오기
+            val link = movie.link
+            // 인텐트를 생성해서 데이터와 함께 다른 Activity 출력
+            val intent = Intent(this, LinkActivity::class.java)
+            intent.putExtra("link", link)
+            startActivity(intent)
+        }
+
+        // ListView의 스크롤 이벤트 처리
+        listView?.setOnScrollListener(object: AbsListView.OnScrollListener{
+            // 스크롤이 발생할 때 호출되는 메소드
+            override fun onScroll(
+                view: AbsListView?,
+                firstVisibleItem: Int,
+                visibleItemCount: Int,
+                totalItemCount: Int
+            ) {
+                // 하단에서 스크롤 했는지 여부를 판단
+                // 첫번째 보여지는 데이터와 보여지는 데이터 개수를 더한 것이
+                // 전체 데이터 개수보다 크거나 같다면 가장 하단으로 내려온 것
+                lastItemVisibleFlag = totalItemCount > 0 &&
+                        firstVisibleItem + visibleItemCount >= totalItemCount
+
+            }
+            // 스크롤의 상태가 변경될 때 호출되는 메소드
+            override fun onScrollStateChanged(view: AbsListView?, scrollState: Int) {
+                // 스크롤이 멈추고 가장 하단에서 스크롤 한 것이라면 데이터 업데이트
+                if(scrollState == AbsListView.OnScrollListener.SCROLL_STATE_IDLE
+                    && lastItemVisibleFlag == true) {
+                    pageno = pageno + 1
+                    val cnt = 10
+                    if (pageno * cnt >= count!!) {
+                        Toast.makeText(this@MovieListActivity, "더이상 데이터가 없습니다.", Toast.LENGTH_LONG)
+                            .show()
+                        Log.e("msg", "더 이상 데이터가 없음")
+                    }else{
+                        // 기존 스레드가 동작 중이면 가져오지 않음
+                        if(th != null){
+                            return
+                        }
+                        // 프로그래스 뷰를 출력하고 스레드를 새로 만들어서 시작
+                        downloadview!!.visibility = View.VISIBLE
+                        th = MovieThread()
+                        th!!.start()
+                    }
+                }
+            }
+        })
+
+        // 스와이프 레이아웃의 리프레시 이벤트 처리
+        val swipe_layout = findViewById<SwipeRefreshLayout>(R.id.swipe_layout)
+        swipe_layout.setOnRefreshListener {
+            pageno = pageno + 1
+            var cnt = 10
+            if(pageno * cnt >= count!!){
+                Log.e("message", "더이상 데이터가 존재하지 않습니다.")
+            } else {
+                if(th == null) {
+                    downloadview?.visibility = View.VISIBLE
+                    th = MovieThread()
+                    th!!.start()
+                    swipe_layout.isRefreshing = false
+                }
+            }
+        }
     }
 }
