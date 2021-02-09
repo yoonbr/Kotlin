@@ -1,34 +1,355 @@
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="qwertg.kakao.seoultoilet">
+package itstudy.kakao.seoultoilet
 
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <application
-        android:usesCleartextTraffic="true"
-        android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.SeoulToilet">
-        <!— 구글 API 키 등록 —>
-        <meta-data android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyBBO3yqg4GL6mLFBtECK-Ozk-JZuRD_oks"/>
+import android.annotation.SuppressLint
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
+import android.location.Location
+import android.location.LocationManager
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.Message
+import android.util.Log
+import androidx.constraintlayout.widget.ConstraintLayout
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.MapView
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.snackbar.Snackbar
+import com.google.maps.android.clustering.ClusterManager
+import com.pedro.library.AutoPermissions
+import com.pedro.library.AutoPermissionsListener
+import org.json.JSONObject
+import java.net.URL
 
-        <meta-data android:name="com.google.android.gms.version"
-            android:value="@integer/google_play_services_version" />
-        <uses-library android:name="org.apache.http.legacy"
-            android:required="false" />
+class MainActivity : AppCompatActivity(), AutoPermissionsListener {
+    //맵의 기본 줌 레벨
+    val DEFAULT_ZOOM_LEVEL = 17F
+    //위치 정보를 가져오지 못했을 때 사용할 기본 위치 정보
+    val CITY_HALL = LatLng(37.5662952, 126.9779450)
+    //구글 맵을 위한 프로퍼티
+    var  googleMap:GoogleMap? = null
+    //권한 설정 여부를 저장할 프로퍼티
+    var isGranted = false
+    //맵 뷰를 참조할 프로퍼티
+    var mapView:MapView? = null
 
-        <activity android:name=".MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-    </application>
+    //메인 뷰를 저장할 프로퍼티
+    var mainContainer:ConstraintLayout? = null
+    //API KEY
+    val API_KEY = "775467665167676133366776497449"
+    //화장실 위도와 경도를 저장할 List
+    val tailetList:MutableList<Map<String, Any>>
+            = mutableListOf<Map<String, Any>>()
+    //화장실 이미지 생성 - 지연 생성
+    val bitmap by lazy {
+        val drawable = resources.getDrawable(
+            R.drawable.restroom_sign, null)
+                as BitmapDrawable
+        Bitmap.createScaledBitmap(drawable.bitmap,
+            64, 64, false)
 
-</manifest>
+    }
+
+    //데이터를 다운로드 받기 위한 스레드 변수
+    var toiletThread : ToiletThread? = null
+
+    //클러스터링을 위한 프로퍼티
+    var clusterManager: ClusterManager<MyItem>? = null
+    var clusterRenderer:ClusterRenderer? = null
+
+    //현재 위치를 리턴해주는 함수
+    @SuppressLint("MissingPermission")
+    fun getMyLocation():LatLng{
+        //위치 확인을 위한 공급자 생성
+        val locationProvider:String = LocationManager.GPS_PROVIDER
+        //위치 서비스 객체를 가져옵니다.
+        val locationManager = getSystemService(Context.LOCATION_SERVICE)
+                as LocationManager
+        //마지막 업데이트 된 위치 가져오기
+        val lastLocation: Location? =
+            locationManager.getLastKnownLocation(locationProvider)
+        Log.e("위도",lastLocation!!.latitude.toString())
+        Log.e("경도",lastLocation!!.longitude.toString())
+        return LatLng(lastLocation!!.latitude, lastLocation!!.longitude)
+    }
+
+
+    //toiletList의 데이터를 가지고 마커를 출력하기 위한 함수
+    fun addMarker(toilet:MutableMap<String, Any>){
+        /*
+        googleMap?.addMarker(
+                MarkerOptions()
+                        .position(LatLng(toilet.get("LAT") as Double,
+                        toilet.get("LNG") as Double))
+                        .title(toilet.get("FNAME") as String)
+                        .snippet(toilet.get("ANAME") as String)
+                        .icon(BitmapDescriptorFactory.fromBitmap(bitmap))
+        )
+         */
+
+        //ClusterManager를 이용해서 마커 출력
+        clusterManager?.addItem(
+            MyItem(
+                LatLng(toilet.get("LAT") as Double,
+                toilet.get("LNG") as Double),
+            toilet.get("FNAME") as String,
+            toilet.get("ANAME") as String,
+            BitmapDescriptorFactory.fromBitmap(bitmap)
+        )
+        )
+    }
+
+    //스레드로부터 메시지를 받아서 addMarker를 호출하는 핸들러
+    val handler = object: Handler(Looper.getMainLooper()){
+        override fun handleMessage(msg : Message){
+            //화장실 정보 목록을 순회하면서 addMarker를 호출
+            for(temp in tailetList){
+                addMarker(temp as MutableMap<String, Any>)
+            }
+
+            //클러스터링 실행
+            clusterManager?.cluster()
+        }
+    }
+
+    //json 문자열을 다운로드 받는 스레드
+    inner class ToiletThread : Thread(){
+        override fun run(){
+            //시작 인덱스와 종료 인덱스를 저장할 프로퍼티
+            var startIdx = 1
+            var endIdx = 100
+
+            //데이터 전체 개수를 저장하기 위한 프로퍼티
+            var count = 0
+
+            do{
+                //URL을 생성
+                var addr = "http://openapi.seoul.go.kr:8088/775467665167676133366776497449/json/SearchPublicToiletPOIService/${startIdx}/${endIdx}/"
+                val url = URL(addr)
+                //URL 연결 객체 생성
+                val connection = url.openConnection()
+
+                //데이터를 바이트 단위로 읽어서 문자열로 변환
+                //문자열의 길이가 짧을 때 사용
+                val data = connection.getInputStream().readBytes().toString(
+                        charset("UTF-8"))
+
+                //받아온 문자열을 JSONObject 로 변환
+                var jsonData = JSONObject(data)
+                //SearchPublicToiletPOIService 키로 객체 가져오기
+                var root = jsonData.getJSONObject("SearchPublicToiletPOIService")
+
+                //데이터 개수를 찾아서 count에 저장
+                count = root.getInt("list_total_count")
+
+                //데이터 배열 찾아오기 - 키이름은 row
+                val row = root.getJSONArray("row")
+
+                for(i in 0 until row.length()){
+                    //배열 안의 요소들을 가져오기
+                    val obj = row.getJSONObject(i)
+                    //필요한 속성들을 찾아서 하나의 객체를 만들고 이 객체를 리스트에 추가
+                    val map = mutableMapOf<String, Any>()
+                    //FNAME(문자열), ANAME(문자열), Y_WGS84(실수), X_WGS84(실수)
+                    map.put("FNAME", obj.getString("FNAME"))
+                    map.put("ANAME", obj.getString("ANAME"))
+                    map.put("LAT", obj.getDouble("Y_WGS84"))
+                    map.put("LNG", obj.getDouble("X_WGS84"))
+                    tailetList.add(map)
+                }
+
+                startIdx = startIdx + 100
+                endIdx = endIdx + 100
+
+            }while( startIdx < count)
+            Log.e("가져온 데이터", tailetList.toString())
+            //핸들러를 호출해서 UI 갱신해달라고 요청
+            handler.sendEmptyMessage(1)
+        }
+    }
+
+
+    //Activity 가 생성될 때 호출되는 메소드
+    //맨 처음 한 번만 수행할 작업을 수행
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        //디자인 한 뷰 찾아오기
+        mainContainer = findViewById(R.id.mainContainer)
+        mapView = findViewById(R.id.mapView)
+        //맵 뷰 초기화
+        mapView!!.onCreate(savedInstanceState)
+
+        var myLocationButton:FloatingActionButton =
+            findViewById(R.id.myLocationButton)
+        //앱이 실행되면 지도를 출력
+        if(isGranted){
+            initMap()
+        }else{
+            //권한 요청
+            AutoPermissions.loadAllPermissions(this, 101)
+        }
+        //버튼 눌렀을 때 처리
+        myLocationButton.setOnClickListener {
+            onMyLocationButtonClick()
+        }
+
+        //ToiletThread().start()
+
+    }
+
+    //앱이 활성화될 때 호출되는 메소드 : onResume에서 처리
+    override fun onStart(){
+        super.onStart()
+        //스레드가 동작 중이지 않으면 스레드를 시작
+        if(toiletThread == null){
+            toiletThread = ToiletThread()
+            toiletThread!!.start()
+        }
+    }
+
+    //앱이 비활성화 될 때 호출되는 메소드리 : onPause에서 처리
+    override fun onStop(){
+        super.onStop()
+        //동작 중이면 스레드를 멈추고 삭제
+        toiletThread!!.isInterrupted
+        toiletThread = null
+
+    }
+
+
+    //Activity가 화면에 보여질 때 마다 호출되는 메소드
+    override fun onResume(){
+        super.onResume()
+       mapView?.onResume()
+    }
+
+    //Activity가 비활성화 될 때 호출되는 메소드
+    override fun onPause() {
+        super.onPause()
+       mapView?.onPause()
+    }
+
+    //Activity가 파괴될 때 호출되는 메소드
+    override fun onDestroy() {
+        super.onDestroy()
+        mapView?.onDestroy()
+    }
+
+    //배터리가 부족할 때 호출되는 메소드
+    override fun onLowMemory() {
+        super.onLowMemory()
+        mapView?.onLowMemory()
+    }
+
+
+
+
+    //맵을 초기화해주는 사용자 정의 함수
+    @SuppressLint("MissingPermission")
+    fun initMap(){
+        //맵 뷰에서 구글 맵을 호출하는 함수
+        Log.e("맵 호출", "맵 ")
+        mapView?.getMapAsync {
+
+            //클러스터링을 위한 초기화 작업
+            clusterManager = ClusterManager(this, it)
+            clusterRenderer =
+                ClusterRenderer(this, it, clusterManager)
+            it.setOnCameraIdleListener(clusterManager)
+            it.setOnMarkerClickListener(clusterManager)
+
+
+
+            //구글 맵 객체 저장
+            googleMap = it
+            //현재 위치로 이동 버튼 비활성호
+            it.uiSettings.isMyLocationButtonEnabled = false
+            //위치 사용 권한에 따른 분기
+            when{
+                isGranted -> {
+                    //현재 위치 활성화
+                    it.isMyLocationEnabled = true
+                    //지도 이동
+                    it.moveCamera(
+                        CameraUpdateFactory.newLatLngZoom(
+                            getMyLocation(),
+                            DEFAULT_ZOOM_LEVEL
+                        )
+                    )
+                }
+                else -> {
+                    //서울 시청으로 이동
+                    it.moveCamera(
+                        CameraUpdateFactory.newLatLngZoom(
+                            CITY_HALL,
+                            DEFAULT_ZOOM_LEVEL
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    //플로팅 액션 버튼을 누를 때 호출될 함수
+    //권한 여부에 따라 지도의 포커스를 현재 위치로 옮기는 역할
+    fun onMyLocationButtonClick(){
+        when{
+            isGranted ->  googleMap!!.moveCamera(
+                CameraUpdateFactory.newLatLngZoom(
+                    getMyLocation(),
+                    DEFAULT_ZOOM_LEVEL
+                )
+            )
+            else -> Snackbar.make(mainContainer!!,
+                "위치 사용 권한이 없습니다.", Snackbar.LENGTH_LONG).show()
+
+        }
+    }
+
+    //권한을 요청하고 그 결과가 전달되었을 때 호출되는 메소드 : Activity 클래스의 메소드
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        //권한 허락의 결과를 AutoPermissions에게 전달
+        AutoPermissions.parsePermissions(
+            this, requestCode, permissions as Array<String>, this
+        )
+    }
+
+    //거부한 권한들의 집합을 알려주는 메소드
+    override fun onDenied(requestCode: Int, permissions: Array<String>) {
+        //스낵바를 이용해서 거부한 권한의 개수를 출력
+        Snackbar.make(mainContainer!!, "거부한 권한은 " + permissions.size
+                + "개", Snackbar.LENGTH_LONG).show()
+
+        //거부한 권한이 1개라도 있으면 그 내용을 표시
+        if(permissions.size == 0){
+            isGranted = true
+
+        }else{
+            isGranted = false
+        }
+    }
+
+    //허가한 권한들의 집합을 알려주는 메소드
+    override fun onGranted(requestCode: Int, permissions: Array<String>) {
+        //스낵바를 이용해서 허용한 권한의 개수를 출력
+        Snackbar.make(mainContainer!!, "허용한 권한은 "
+                + permissions.size + "개", Snackbar.LENGTH_LONG).show()
+
+        //맵을 초기화해주는 메소드를 호출
+        initMap()
+    }
+}

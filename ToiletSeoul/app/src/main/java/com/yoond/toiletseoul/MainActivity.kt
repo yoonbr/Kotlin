@@ -6,6 +6,7 @@ import android.location.Location
 import android.location.LocationManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -15,21 +16,16 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import com.pedro.library.AutoPermissions
 import com.pedro.library.AutoPermissionsListener
-import org.jetbrains.anko.find
 
 class MainActivity : AppCompatActivity(), AutoPermissionsListener {
     // map의 기본 zoom level
-    val DEFAULT_ZOOM_LEVEL = 15F
-
+    val DEFAULT_ZOOM_LEVEL = 17F
     // 위치 정보를 가져오지 못했을 때 사용할 기본 위치 정보 (시청)
     val CITY_HALL = LatLng(37.5662952, 126.9779450)
-
     // 구글 맵을 위한 프로퍼티
     var googleMap: GoogleMap? = null
-
     // 권한 설정 여부 저장 프로퍼티
     var isGranted = false
-
     // 맵 뷰를 참조할 프로퍼티
     var mapView:MapView? = null
 
@@ -40,19 +36,75 @@ class MainActivity : AppCompatActivity(), AutoPermissionsListener {
     @SuppressLint("MissingPermission")
     fun getMyLocation():LatLng {
         // 위치 확인을 위한 공급자 생성
-        val locationProvider:String = LocationManager.GPS_PROVIDER
+        val locationProvider: String = LocationManager.GPS_PROVIDER
         // 위치 서비스 객체를 가져오기
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         // 마지막 업데이트 된 위치 가져오기
         val lastLocation: Location? = locationManager.getLastKnownLocation(locationProvider)
-
+        Log.e("위도 : ", lastLocation!!.latitude.toString())
+        Log.e("경도 : ", lastLocation!!.longitude.toString())
         return LatLng(lastLocation!!.latitude, lastLocation!!.longitude)
+    }
+
+    // Activity가 생성될 때 호출되는 메소드
+    // 맨 처음 한 번만 수행할 작업을 수행
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        // 디자인 한 뷰 찾아오기
+        mainContainer = findViewById(R.id.mainContainer)
+        mapView = findViewById(R.id.mapView)
+            mapView!!.onCreate(savedInstanceState)
+
+        var myLocationButton:FloatingActionButton =
+                findViewById(R.id.myLocationButton)
+
+        // 앱이 실행되면 지도를 출력
+        if(isGranted) {
+            initMap()
+        } else {
+            // 권한 요청
+            AutoPermissions.loadAllPermissions(this, 101)
+        }
+
+        // 버튼 눌렀을 때 처리
+        myLocationButton.setOnClickListener{
+            onMyLocationButtonClick()
+        }
+
+    }
+
+
+    // activity 화면에 보여질 때
+    override fun onResume() {
+        super.onResume()
+        mapView?.onResume()
+    }
+
+    // activity 비활성화 될 때
+    override fun onPause() {
+        super.onPause()
+        mapView?.onPause()
+    }
+
+    // activity 파괴될 때
+    override fun onDestroy() {
+        super.onDestroy()
+        mapView?.onDestroy()
+    }
+
+    // 배터리 부족시
+    override fun onLowMemory() {
+        super.onLowMemory()
+        mapView?.onLowMemory()
     }
 
     // 맵을 초기화해주는 사용자 정의 함수
     @SuppressLint("MissingPermission")
     fun initMap(){
         // 맵 뷰에서 구글 맵을 호출하는 함수
+        Log.e("맵 호출", "맵 ") // success
         mapView?.getMapAsync {
             // 구글 맵 객체 저장
             googleMap = it
@@ -77,7 +129,7 @@ class MainActivity : AppCompatActivity(), AutoPermissionsListener {
                                 CITY_HALL, DEFAULT_ZOOM_LEVEL
                         )
                     )
-               }
+                }
             }
         }
     }
@@ -95,58 +147,6 @@ class MainActivity : AppCompatActivity(), AutoPermissionsListener {
             else ->
                 Snackbar.make(mainContainer!!, "위치 사용 권한 없음.", Snackbar.LENGTH_LONG).show()
         }
-    }
-
-    // Activity가 생성될 때 호출되는 메소드
-    // 맨 처음 한 번만 수행할 작업을 수행
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        // 디자인 한 뷰 찾아오기
-        mainContainer = findViewById(R.id.mainContainer)
-        mapView = findViewById(R.id.mapView)
-            mapView!!.onCreate(savedInstanceState)
-        var myLocationButton:FloatingActionButton =
-                findViewById(R.id.myLocationButton)
-
-        // 앱이 실행되면 지도를 출력
-        if(isGranted) {
-            initMap()
-        } else {
-            // 권한 요청
-            AutoPermissions.loadAllPermissions(this, 101)
-        }
-
-        // 버튼 눌렀을 때 처리
-        myLocationButton.setOnClickListener{
-            onMyLocationButtonClick()
-        }
-
-    }
-
-    // activity 화면에 보여질 때
-    override fun onResume() {
-        super.onResume()
-        mapView?.onResume()
-    }
-
-    // activity 비활성화 될 때
-    override fun onPause() {
-        super.onPause()
-        mapView?.onPause()
-    }
-
-    // activity 파괴될 때
-    override fun onDestroy() {
-        super.onDestroy()
-        mapView?.onDestroy()
-    }
-
-    // 배터리 부족시
-    override fun onLowMemory() {
-        super.onLowMemory()
-        mapView?.onLowMemory()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -175,5 +175,8 @@ class MainActivity : AppCompatActivity(), AutoPermissionsListener {
         // 스낵바를 이용해서 허용한 권한의 개수를 출력
         Snackbar.make(mainContainer!!, "허용한 권한 : " + permissions.size + "개",
                 Snackbar.LENGTH_LONG).show()
+
+        // 맵을 초기화해주는 메소드를 호출
+        initMap()
     }
 }
