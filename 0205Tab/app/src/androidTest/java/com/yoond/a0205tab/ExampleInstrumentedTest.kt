@@ -1,4 +1,4 @@
-package com.yoond.a0205tap
+package com.yoond.a0205tab
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.yoond.a0205tap", appContext.packageName)
+        assertEquals("com.yoond.a0205tab", appContext.packageName)
     }
 }
